@@ -20,8 +20,15 @@ function createNode(vnode) {
     node = updateHostComponent(vnode);
   } else if(isStringorNumber(vnode)) { //文本节点
     node = updateTextComponent(vnode);
+  } else if (typeof type === 'function') {
+    node = type.prototype.isReactComponent ? updateClassComponent(vnode) : updateFunctionComponent(vnode);
   }
   return node;
+}
+
+// 处理属性
+function updateNode(node, nextVal) {
+  Object.keys(nextVal).filter(key => key !== 'children').forEach(k => node[k] = nextVal[k])
 }
 
 function updateHostComponent(vnode) {
@@ -34,6 +41,25 @@ function updateHostComponent(vnode) {
 function updateTextComponent(vnode) {
   const node = document.createTextNode(vnode);
   return node;
+}
+
+// 处理函数组件
+function updateFunctionComponent(vnode) {
+  const { type, props } = vnode;
+  const fnnode = type(props);
+  // vnode -> node
+  const node = createNode(fnnode);
+  return node;
+}
+
+// 处理类组件
+function updateClassComponent(vnode) {
+  const { type, props } = vnode;
+  // 实例化类
+  const instance = new type(props);
+  const classnode = instance.render();
+  const node = createNode(classnode);
+  return node
 }
 
 // 处理children
